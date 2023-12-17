@@ -69,4 +69,54 @@ abstract contract Ownable is Context {
     function renounceOwnership() public virtual onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
-    }￼Enter
+    }
+
+/**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
+contract TokenPreSale is Ownable {
+    // address of admin
+    IERC20 public token;
+    // token price variable
+    uint256 public tokenprice;
+    // count of token sold vaariable
+    uint256 public totalsold; 
+     
+    event Sell(address sender,uint256 totalvalue); 
+   
+    // constructor 
+    constructor(address _tokenaddress, uint256 _tokenvalue){
+        tokenprice = _tokenvalue;
+        token  = IERC20(_tokenaddress);
+    }
+   
+    // buyTokens function
+    function buyTokens() public payable{
+        address buyer = msg.sender;
+        uint256 bnbAmount = msg.value;
+        // check if the contract has the tokens or not
+        require(token.balanceOf(address(this)) >= bnbAmount * tokenprice,'the smart contract dont hold the enough tokens');
+        // transfer the token to the user
+        token.transfer(buyer, bnbAmount * tokenprice);
+        // increase the token sold
+        totalsold += bnbAmount * tokenprice;
+        // emit sell event for ui
+        emit Sell(buyer, bnbAmount * tokenprice);
+    }
+
+    // end sale
+    function endsale() public onlyOwner {
+        // transfer all the remaining tokens to admin
+        token.transfer(msg.sender, token.balanceOf(address(this)));
+        // transfer all the etherum to admin and self selfdestruct the contract
+        selfdestruct(payable(msg.sender));
+    }
+}
